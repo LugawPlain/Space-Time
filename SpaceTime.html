@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einstein's Bent Space-Time Simulation</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <style>
+        :root {
+            --bg-color: #050508;
+            --grid-color: #1a2a3a;
+            --grid-warp-color: #3b82f6;
+            --sun-color: #fbbf24;
+            --sun-glow: #f59e0b;
+            --text-color: #e2e8f0;
+            --panel-bg: rgba(15, 23, 42, 0.90);
+            --accent-color: #8b5cf6; /* Violet for AI */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 320px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        #ui-layer::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        #ui-layer {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(8px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        h2 {
+            font-size: 1.0rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #cbd5e1;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.7;
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            margin-top: 8px;
+        }
+        
+        button.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        button.ai-btn {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+        }
+
+        button.ai-btn:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+        }
+
+        .ai-input {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .ai-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .ai-response {
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 3px solid var(--accent-color);
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #e2e8f0;
+            border-radius: 0 6px 6px 0;
+            min-height: 40px;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none; /* Hidden by default */
+        }
+        
+        .ai-response.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .legend {
+            margin-top: 15px;
+            font-size: 0.75rem;
+            color: #64748b;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 10px;
+        }
+
+        #fps {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-family: monospace;
+            color: #475569;
+            font-size: 12px;
+        }
+        
+        .hint {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.9rem;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 0.7; }
+            100% { opacity: 0.4; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="fps">FPS: 60</div>
+    
+    <div id="ui-layer">
+        <!-- Control Panel -->
+        <div class="panel">
+            <h1>Bent Space-Time</h1>
+            <p>Matter tells space how to curve. Space tells matter how to move.</p>
+            
+            <div class="control-group">
+                <label>Sun Mass (Gravity Well) <span id="mass-val">100%</span></label>
+                <input type="range" id="mass-slider" min="0" max="200" value="100">
+            </div>
+
+            <div class="control-group">
+                <label>Simulation Speed <span id="speed-val">1.0x</span></label>
+                <input type="range" id="speed-slider" min="0" max="3" step="0.1" value="1">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Show Grid
+                    <input type="checkbox" id="grid-toggle" checked>
+                </label>
+            </div>
+
+            <button id="reset-btn">Clear Planets</button>
+            <button class="secondary" id="reset-sim-btn">Reset Simulation</button>
+            
+            <div class="legend">
+                Left Click & Drag: Launch Planet<br>
+                Spacebar: Pause
+            </div>
+        </div>
+
+      
+    </div>
+
+    <div class="hint">Click and drag anywhere to sling a planet into orbit</div>
+    <canvas id="simCanvas"></canvas>
+
+<script>
+/**
+ * SIMULATION ENGINE
+ */
+
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d', { alpha: false }); 
+
+// Gemini API Key (Injected by environment)
+const apiKey = ""; 
+
+// State
+let width, height;
+let cx, cy;
+let lastTime = 0;
+let isPaused = false;
+
+// Physics Constants
+const G = 0.5; 
+let SUN_MASS = 10000;
+let TIME_SCALE = 1.0;
+const FRICTION = 0.0;
+const PLANET_MASS_DEFAULT = 10;
+
+// Mouse Interaction
+const mouse = { x: 0, y: 0, isDown: false, dragStartX: 0, dragStartY: 0 };
+
+// Entities
+let sun;
+let planets = [];
+let grid;
+
+// --- Classes ---
+
+class Vector {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+    add(v) { this.x += v.x; this.y += v.y; return this; }
+    sub(v) { this.x -= v.x; this.y -= v.y; return this; }
+    mult(n) { this.x *= n; this.y *= n; return this; }
+    mag() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+    copy() { return new Vector(this.x, this.y); }
+}
+
+class Body {
+    constructor(x, y, mass, radius, color, isStatic = false) {
+        this.pos = new Vector(x, y);
+        this.vel = new Vector(0, 0);
+        this.acc = new Vector(0, 0);
+        this.mass = mass;
+        this.radius = radius;
+        this.color = color;
+        this.isStatic = isStatic;
+        this.trail = [];
+        this.maxTrail = 100;
+    }
+
+    update(dt) {
+        if (this.isStatic) return;
+
+        // Velocity Verlet Integration
+        this.vel.add(this.acc.copy().mult(dt));
+        this.pos.add(this.vel.copy().mult(dt));
+        this.acc.mult(0);
+
+        // Trail logic
+        if (planets.indexOf(this) !== -1 && !isPaused) {
+            if (frameCount % 3 === 0) {
+                this.trail.push({x: this.pos.x, y: this.pos.y});
+                if (this.trail.length > this.maxTrail) this.trail.shift();
+            }
+        }
+    }
+
+    applyForce(force) {
+        let f = force.copy();
+        f.mult(1 / this.mass);
+        this.acc.add(f);
+    }
+
+    draw(ctx) {
+        // Draw Trail
+        if (this.trail.length > 1) {
+            ctx.beginPath();
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.4;
+            ctx.moveTo(this.trail[0].x, this.trail[0].y);
+            for(let i = 1; i < this.trail.length; i++) {
+                ctx.lineTo(this.trail[i].x, this.trail[i].y);
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Draw Body
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        
+        if (this.isStatic) {
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = 'rgba(251, 191, 36, 0.6)';
+        } else {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = this.color;
+        }
+        
+        ctx.fill();
+        ctx.shadowBlur = 0; 
+    }
+}
+
+class SpaceTimeGrid {
+    constructor(spacing) {
+        this.spacing = spacing;
+        this.cols = 0;
+        this.rows = 0;
+        this.points = [];
+        this.init();
+    }
+
+    init() {
+        this.cols = Math.ceil(width / this.spacing) + 2;
+        this.rows = Math.ceil(height / this.spacing) + 2;
+        this.points = [];
+
+        for (let i = 0; i < this.cols; i++) {
+            for (let j = 0; j < this.rows; j++) {
+                this.points.push({
+                    baseX: (i * this.spacing) - this.spacing,
+                    baseY: (j * this.spacing) - this.spacing,
+                    x: 0,
+                    y: 0
+                });
+            }
+        }
+    }
+
+    update(massiveBody) {
+        const maxDist = Math.max(width, height);
+        
+        for (let p of this.points) {
+            let dx = massiveBody.pos.x - p.baseX;
+            let dy = massiveBody.pos.y - p.baseY;
+            let distSq = dx*dx + dy*dy;
+            let dist = Math.sqrt(distSq);
+            let pullFactor = 0;
+            
+            if (dist > 10) { 
+               let strength = massiveBody.mass * 2.5; 
+               pullFactor = strength / (distSq + 5000); 
+            }
+
+            p.x = p.baseX + dx * pullFactor;
+            p.y = p.baseY + dy * pullFactor;
+        }
+    }
+
+    draw(ctx) {
+        if (!document.getElementById('grid-toggle').checked) return;
+
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.25)'; 
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+
+        for (let j = 0; j < this.rows; j++) {
+            let pStart = this.points[j]; 
+            ctx.moveTo(pStart.x, pStart.y);
+            for (let i = 1; i < this.cols; i++) {
+                let p = this.points[i * this.rows + j];
+                ctx.lineTo(p.x, p.y);
+            }
+        }
+
+        for (let i = 0; i < this.cols; i++) {
+            let pStart = this.points[i * this.rows];
+            ctx.moveTo(pStart.x, pStart.y);
+            for (let j = 1; j < this.rows; j++) {
+                let p = this.points[i * this.rows + j];
+                ctx.lineTo(p.x, p.y);
+            }
+        }
+
+        ctx.stroke();
+    }
+}
+
+// --- setup ---
+
+function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    cx = width / 2;
+    cy = height / 2;
+    
+    if (grid) grid.init();
+    if (sun) {
+        sun.pos.x = cx;
+        sun.pos.y = cy;
+    }
+}
+
+function init() {
+    resize();
+    sun = new Body(cx, cy, SUN_MASS, 25, '#fbbf24', true);
+    grid = new SpaceTimeGrid(40); 
+    spawnPlanet(cx + 200, cy, 0, 5);
+    spawnPlanet(cx - 300, cy - 100, 2, -3);
+}
+
+function spawnPlanet(x, y, vx, vy, color = null, radius = null) {
+    const r = radius || Math.random() * 3 + 4;
+    const m = PLANET_MASS_DEFAULT;
+    
+    if (!color) {
+        const colors = ['#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#22d3ee'];
+        color = colors[Math.floor(Math.random() * colors.length)];
+    }
+    
+    let p = new Body(x, y, m, r, color);
+    p.vel.x = vx;
+    p.vel.y = vy;
+    planets.push(p);
+}
+
+// --- Physics Logic ---
+
+function calculateGravity(p1, p2) {
+    let dir = new Vector(p2.pos.x - p1.pos.x, p2.pos.y - p1.pos.y);
+    let distSq = dir.x*dir.x + dir.y*dir.y;
+    let dist = Math.sqrt(distSq);
+
+    if (dist < (p1.radius + p2.radius)) {
+        return new Vector(0,0);
+    }
+
+    dir.mult(1 / dist); 
+    let forceMag = (G * p1.mass * p2.mass) / distSq;
+    dir.mult(forceMag);
+    return dir;
+}
+
+// --- Main Loop ---
+
+let frameCount = 0;
+
+function animate(timestamp) {
+    let dt = (timestamp - lastTime) / 16.67; 
+    if (isNaN(dt)) dt = 1;
+    dt = Math.min(dt, 4.0);
+    lastTime = timestamp;
+
+    if (!isPaused) {
+        dt *= TIME_SCALE;
+
+        for (let i = planets.length - 1; i >= 0; i--) {
+            let p = planets[i];
+
+            let forceFromSun = calculateGravity(p, sun);
+            p.applyForce(forceFromSun);
+
+            p.update(dt);
+
+            // Collision with Sun
+            let dx = p.pos.x - sun.pos.x;
+            let dy = p.pos.y - sun.pos.y;
+            if (dx*dx + dy*dy < (sun.radius/2 + p.radius)*(sun.radius/2 + p.radius) + 400) { 
+                planets.splice(i, 1);
+            }
+            
+            // Remove if too far
+            if (p.pos.x < -2000 || p.pos.x > width + 2000 || p.pos.y < -2000 || p.pos.y > height + 2000) {
+                planets.splice(i, 1);
+            }
+        }
+    }
+
+    grid.update(sun);
+
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg-color');
+    ctx.fillRect(0, 0, width, height);
+
+    grid.draw(ctx);
+    sun.draw(ctx);
+    
+    for (let p of planets) {
+        p.draw(ctx);
+    }
+
+    if (mouse.isDown) {
+        ctx.beginPath();
+        ctx.moveTo(mouse.dragStartX, mouse.dragStartY);
+        ctx.lineTo(mouse.x, mouse.y);
+        ctx.strokeStyle = 'white';
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.beginPath();
+        ctx.arc(mouse.dragStartX, mouse.dragStartY, 5, 0, Math.PI*2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+    }
+
+    frameCount++;
+    requestAnimationFrame(animate);
+}
+
+// --- Event Listeners ---
+
+window.addEventListener('resize', resize);
+
+window.addEventListener('mousedown', (e) => {
+    if (e.target.closest('#ui-layer')) return;
+
+    mouse.isDown = true;
+    mouse.dragStartX = e.clientX;
+    mouse.dragStartY = e.clientY;
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+
+window.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+
+window.addEventListener('mouseup', (e) => {
+    if (!mouse.isDown) return;
+    mouse.isDown = false;
+    const vx = (mouse.dragStartX - e.clientX) * 0.05;
+    const vy = (mouse.dragStartY - e.clientY) * 0.05;
+    if (Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1) {
+        spawnPlanet(mouse.dragStartX, mouse.dragStartY, vx, vy);
+    }
+});
+
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        isPaused = !isPaused;
+    }
+});
+
+const massSlider = document.getElementById('mass-slider');
+const speedSlider = document.getElementById('speed-slider');
+const massVal = document.getElementById('mass-val');
+const speedVal = document.getElementById('speed-val');
+
+massSlider.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value);
+    SUN_MASS = 10000 * (val / 100);
+    sun.mass = SUN_MASS;
+    massVal.textContent = val + '%';
+});
+
+speedSlider.addEventListener('input', (e) => {
+    TIME_SCALE = parseFloat(e.target.value);
+    speedVal.textContent = TIME_SCALE.toFixed(1) + 'x';
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+    planets = [];
+});
+
+document.getElementById('reset-sim-btn').addEventListener('click', () => {
+    planets = [];
+    massSlider.value = 100;
+    speedSlider.value = 1;
+    SUN_MASS = 10000;
+    sun.mass = SUN_MASS;
+    TIME_SCALE = 1;
+    massVal.textContent = '100%';
+    speedVal.textContent = '1.0x';
+    spawnPlanet(cx + 200, cy, 0, 5);
+});
+
+
+
+
+
+// Start
+init();
+requestAnimationFrame(animate);
+
+</script>
+</body>
+</html>
