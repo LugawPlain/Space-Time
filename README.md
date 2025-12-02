@@ -39,11 +39,4 @@ This simulation uses a simplified model of General Relativity:
 *   **Mass tells space how to curve**: The central sun distorts the background grid, pulling grid points towards it.
 *   **Space tells matter how to move**: Planets are accelerated towards the sun based on the inverse-square law of gravity, simulating the effect of rolling along the curved surface.
 
-## 🛠️ Technologies
-
-*   **HTML5 Canvas**: For high-performance rendering of the grid and particles.
-*   **JavaScript (ES6+)**: For the physics engine and simulation logic.
-*   **CSS3**: For the modern, glassmorphism UI styling.
-
----
 *Created for the SpaceTime Project.*
